@@ -1,0 +1,177 @@
+---
+title: 'Solutions for Computer Lab PFS: Impacts of fishing in an ecological context'
+author: "Max Lindmark & Anna Gårdmark"
+date: "7 december 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+In this practical you will use dynamic population models of a predator and its prey, based on Yodzis (1994), in which he discusses the model by Leslie (1948) and later May et al (1979). These models were applied to explore how predator-prey interactions affects potential harvesting of a population. You will be using R to explore the dynamics of the model. R is a statistical software that is very popular in especially biological sciences and can be downloaded for free. If you have not installed R and R-studio already, please see the document **"First time R user"**. R-studio is just an interface for R with many helpful utilities. It is an advantage if you know some Basic R, but you should be able to follow along this lab without any prior knowledge if you consult **"First time R user"**. In this document R-code is text with grey background. You can copy these chunks of code to your R-script in R-studio (instead of pasting it directly into the console because it quickly becomes hard to overview your work!). For some it might also be a repetition of calculus and algebra, and you will also practice some basic population dynamics and equilibrium theory.
+
+There are hints for most questions **at the end of this document**. Do have a look at them if you get stuck! You can also look at the solutions or ask an instructor if you get really stuck!
+
+You might also find it useful to check out the solutions to a similar lab in a previous course (*Ecology for fish management and conservation*) to get a feeling for how these questions can be addressed.  
+
+# The Model
+Here we will implement and analyze the model by Yodzis (1994), which is a simplistic predator-prey model with harvesting (fishing) on the prey species. The model received attention when it was used by May et al. (1979) to study Baleen whale predators (parvorder *Mysticeti*) and their prey, krill (order *Euphausiacea*). This is a continuous-time model, based on the logistic growth equation (the Verhulst model). The following differential equation describes the rate of change in number of individuals (density) in the prey (krill) population, $N_k$ (subscript $k$ for krill): 
+
+\begin{equation}
+\label{eq:1}
+dN_k/dt = r_kN_k(1-N_k/K) - aN_kN_w - EN_k
+\end{equation}
+
+where $r_k$ is the intrinsic growth rate and $K$ is the carrying capacity (when $N_k=K$ growth stops due to resource limitation) and $E$ is the constant fishing effort. 
+
+The dynamics of the predator population is described by a logistic growth equation in which their carrying capacity is proportional to the amount of prey available (note, with a different proportionality constant ($\alpha$), not $a$ as in the predation term!) (subscript $w$ is for whale):
+
+\begin{equation}
+\label{eq:2}
+dN_w/dt = r_wN_w(1-N_w/\alpha N_k)
+\end{equation}
+
+
+* **Question 1: In ecology, the functional response describes the intake rate of food as a function of food density. Identify the term for the predator's functional response, and explain which type it is (you can search the webs if you need to!). **
+
+*$aN_k$ is the predator's functional response (Type 1, linear).*
+
+* **Question 2: The functional response is a key function when studiyng predator-prey interactions. Draw Holling's functional responses (Type 1, 2 and 3) (on a piece of paper or in the computer). Describe the assumptions behind each function and discuss for which species they might be relevant**
+
+*Type 1: Food intake increases linearily with food density - consuming food does not limit your search for food. It's completely unrealistic to never be limited in handling or searching for prey, but for naturally occuring food densities, the functional response may be linear.*
+
+*Type 2: This is a very common functional response that is based on the assumption that food intake levels off with increasing food density because the capacity to handle or digest prey start to limit food intake at high resource densites. This function can be used for capture-predators.*
+
+*Type 3: As with the Type 2, feeding intake reaches a maximum when digestion capacity limits food intake. However, here you also have a lower feeding intake when food is really scarce. While less common, this functional response is sometimes motivated for species that start to feed first when food reaches a critical mass (e.g. whn preying on schooling fish)*
+
+We have an equilibrium when the rate of change of both equations equal 0. One find to visualize equilibria is to find the so called zero-growth isoclines (the lines where each single differential equation's rate of change is 0) and plot them in the phase plane (i.e. with the predator and prey densities on the y- and x-axis).
+
+* **Question 3: Find the expressions (there are two!) for $N_k$ that satisfy $dN_k/dt = r_kN_k(1-N_k/K) - aN_kN_w - EN_k = 0$ **. 
+
+*The trivial isocline is $N_k$$=0$.*
+
+*The expression for the non-trivial isocline in terms of $N_k$ is found by setting $N_k$ alone on one side:*
+$$dN/dt=r_kN_k(1-N_k/K)-aN_kN_w-EN_k=0$$
+*divide with $N_k$:*
+
+$$r_k(1-N_k/K)-aN_w-E=0$$
+*divide with $r_k$:*
+
+$$1-N_k/K-aN_w/r_k-E/r_k=0$$
+*multiply with $K$:*
+
+$$K-N_k-aN_wK/r_k-KE/r_k=0$$
+*Shuffle so that $N_k$ is alone and factor $K$:*
+
+$$N^*_k=K(1-aN_w/r_k-E/r_k)$$
+
+* **Question 4: Repeat question #3 for the whale species**
+
+*The expression for the non-trivial isocline in terms of $N_w$ is found by setting $N_w$ alone on one side: *
+$$dN/dt=r_wN_w(1-N_w/\alpha N_k)=0$$
+*divide with $N_k$:*
+
+$$dN/dt=r_wN_w(1-N_w/\alpha N_k)=0$$
+*multiply out the parenthesis and divide with $N_w$:*
+
+$$r_w-r_wN_w/\alpha N_k=0$$
+*multiply with $\alpha N_k$ and divide by $r_w$:*
+
+$$\alpha N_k-N_w=0$$
+*Shuffle so that $N_w$ is alone:*
+
+$$N^*_w=\alpha N_k$$
+
+
+* **Question 5: a) Plot the whale-isocline as a function of prey density. b) Using the lines()-function, add in the prey isoclines as well. Use the following parameters: $r_k=0.1$, $K=10$, $a=0.005$ and $\alpha=1$. Use three different values of effort: 0, 0.005, 0.008. Set the plotting range like this: plot(Y ~ X, ylim = c(0, 15), xlim = c(0, 15)). Consider predator and prey densities between 0 and 30. c) Locate the points of stable equilibrium. d) Explain how the stable equilibrium varies with effort. e) How are the whales affected by harvesting of krill?**
+
+*In this scenario, predators and fishing act in much the same way in terms of their effect on the krill population. Harvesting with a constant effort reduces the equilibrium density of both species, and you can also see that the predator persists with its prey for all fishing efforts.*
+```{r}
+#-- Parameters
+r <- 0.1
+K <- 20
+a <- 0.005
+alpha <- 1
+
+#-- Create vectors of predator and prey values for generating data
+N_w <- seq(0, 30, 0.1)
+N_k <- seq(0, 30, 0.1)
+
+#-- Create vectors of N_star for the three different values of effort, E
+N_star_k_lowE = K * (1 - a * N_w/r - 0/r)
+N_star_k_midE = K * (1 - a * N_w/r - 0.05/r)
+N_star_k_highE = K * (1 - a * N_w/r - 0.08/r)
+
+N_star_w = alpha * N_k
+
+#-- Plot whale isocline as a function of krill
+plot(N_star_w ~ N_k, 
+     type = "l", # make it a line instead of points
+     lwd = 3, 
+     xlim = c(0, 15), # change axes ranges 
+     ylim = c(0, 15),
+     xlab = "Krill", # change titles of axes
+     ylab = "Whale")  
+
+#-- Add the krill isoclines
+lines(N_star_k_lowE ~ N_k, col = "red", lwd = 3)
+lines(N_star_k_midE ~ N_k, col = "red", lwd = 3, lty = 2)
+lines(N_star_k_highE ~ N_k, col = "red", lwd = 3, lty = 3)
+
+```
+
+
+
+* **Question 6: How does whale abundance affect yield of krill? Yield can be defined as: $Y = EN_k$. Explore fishing efforts between 0 and 0.1 and whale densities of 1, 3 and 5**
+
+*The maximum sustainable yield (MSY) declines with increasing whale density and also occurs at lower Effort-values.
+
+```{r}
+##-- Plot yield over effort curves for different whale densities
+E <- seq(0, 0.1, 0.001)
+
+yield_v_w1 <- E * K * (1 - a * 1/r - E/r)
+yield_v_w3 <- E * K * (1 - a * 3/r - E/r)
+yield_v_w5 <- E * K * (1 - a * 5/r - E/r)
+
+plot(yield_v_w1 ~ E,
+     type = "l",
+     ylim = c(0, 0.5),
+     xlim = c(0, 0.1),
+     lwd = 3)
+
+lines(yield_v_w3 ~ E, col = "orange", lwd = 3)
+lines(yield_v_w5 ~ E, col = "red", lwd = 3)
+
+legend("topright", bty = "n", c("w = 1", "w = 3", "w = 5"), lwd = 3, col = c("black", "orange", "red"))
+
+```
+
+
+* **Question 7: Discuss how the results in 5 and 6 depend on the assumptions of the functional response. Would they differ with another type, and what would that imply for fisheries managers and conservatioists? **
+
+## References
+May et al, P. 1979. Management of Multispecies Fisheries. *Science*, 205, 4403.
+
+Yodzis, P. 1994. Predator-Prey Theory and Management of Multispecies Fisheries. *Ecological Applications*, 4, 1, 51-58.
+
+## Hints
+Question 1: No hint here!
+
+Question 2: No hint here!
+
+Question 3: No hint here!
+
+Question 4: No hint here!
+
+Question 5: Since we want to plot a curve, we need several values of predator and prey densities. We can simply replace $N_k$ and $N_w$ with vectors of the whole range of $N$ values. You can create a sequential vector using the seq()-function or with c() and give the values manually.
+
+Question 6: Substitute N in the equation for yield with the equation for the krill-isocline. 
+
+Question 7: It is likely that if the predator would have had e.g. a type three functional response that it would not be able to survive on extremely small krill densities, as in the current model. Note also that the whale-carrying capacity declines with resource densities, which is why it can survive on very small krill densities. If they whales require a specific threshold density to persist, this might introduce conflicts between conservation of whales and maximizing exploitation of krill.
+
+
+
+
