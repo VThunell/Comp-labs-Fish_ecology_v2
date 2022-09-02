@@ -1,1 +1,1 @@
-# Computer labs and solutions for SLU courses Principles of Fisheries Sciences (PSF) and Ecology for Fish Management and Conservation (EFCM)
+# Computer labs and solutions for SLU course Ecology for Fish Management and Conservation (EFCM) for 2019, 2021 and 2022. Also avaiable material from Principles of Fisheries Sciences (PSF) 2019. The content is edited from material of @maxlindmark from 2019. Version 2021 and 2022 by @VThunell.

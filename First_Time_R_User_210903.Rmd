@@ -1,0 +1,83 @@
+---
+title: "First time R user: Computer Lab in ECFM"
+author: "Max Lindmark"
+date: "27 augusti 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+In this document you will get instructions on how to install R and R-Studio, and a quick intro to the only two functions you will need for this lab. This document is aimed to the people who have never used R. If you are already familiar with it, you likely do not have to recap the info in the document. Feel free to ask for good resources for developing your R skills!
+
+# Download R for the computer lab
+R is a widely used programming language and free software environment for statistical computing and graphics, especially in biology/ecology. The learning curve is pretty steep, but for this computer lab you will only use basic commands and you can mostly  re-use code from previous parts to answer the questions. This document will go through some of the basics, from installing R to some simple commands, such as basic calculations and plotting!
+
+First of all, you need to install R. To do this, go to https://ftp.acc.umu.se/mirror/CRAN/ and choose the right file for your operating system. The installation is straightforward. 
+
+The basic R which you have just downloaded and installed can be used for the lab. However, we recommend using R Studio. R-studio is just an interface for R with many helpful utilities. You can download it from this link: https://www.rstudio.com/products/rstudio/download/ (choose the free desktop version!)
+
+# Get familiar with the Software
+When you open R Studio for the first time, press Ctrl + Shift + N to open a new R script (or press New File). Then press Ctrl + S to save it with an appropriate name, for instance "ComputerLab_Name_Date_CourseName.
+
+The R script is used for managing your code while you work and build it. The actual computing is done in the console (workspace, the frame down to your left in Rstudio) in either R-studio or basic R. The editor can talk directly with the console. For instance, type $1+1$ in the editor, put the cursor on that row and press Ctrl + Enter and see what happens in the console.
+
+The text with grey background in this document is R-code that you can copy directly to your editor or the console.
+
+R comes with functions already installed. You can type "?" followed by the function name to see what it does. One that we will use extensively is plot() (to see the documentation of this function, type ?plot in the command window). 
+```{r}
+plot(speed ~ dist, data = cars)
+```
+Plot() is a fairly straightforward function. You choose which variable to have on Y (speed) and then what speed is a function of (dist). The "squiggle" (~) means "a function of". Then you select in which data frame those columns with speed and dist exist. 
+
+You can also add lines to an **existing** plot with the function lines()
+
+```{r}
+plot(speed ~ dist, data = cars)
+lines(speed ~ dist, data = cars, col = "red")
+```
+
+But your data does not have to be in a data frame. In fact, it will not be in a data frame in the lab but in vector format. You can plot vectors directly if they are of the same length. See this example:
+
+```{r}
+
+## We are going to use the seq()- function to generate a sequence of numbers. 
+## The function has three arguments that determine the sequence.
+
+## Here "<-" means "gets the values(s)". Think of it as an "=" sign
+Y <- seq(from = 1, to = 160, by = 4)
+X <- seq(from = 1, to = 40, by = 1)
+
+Y
+X
+
+plot(Y ~ X)
+```
+
+With the hash symbol you make comments in your code or deactivate parts of your code that you dont want to run.
+
+The last thing you will need to know to do the lab is how vector multiplication works.
+
+```{r}
+
+## Create a new vector, N
+N <- seq(from = 1, to = 10, by = 1)
+
+## Multipliy N with 3:
+N * 3
+
+## Multipliy N with another vector:
+M <- seq(from = 1, to = 10, by = 2)
+
+N * M
+```
+
+And that's it! You do not need a deeper knowledge in R than this to answer the questions in the lab.
+
+
+
+
+
+

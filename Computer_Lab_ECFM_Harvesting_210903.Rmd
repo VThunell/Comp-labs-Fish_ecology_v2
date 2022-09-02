@@ -1,0 +1,193 @@
+---
+title: "Computer Lab ECFM: Population dynamics and harvesting"
+author: "Max Lindmark, Anna Gårdmark, Stefan Skoglund & Viktor Thunell"
+date: "3 September 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+In this practical you will use The Schaefer Model [1] to explore how harvesting affects population numbers and dynamics. You will be using R to explore the dynamics of the model. R is a statistical software that is very popular in especially biological sciences and is Open Source (free to use and modify). If you have not installed R and R-studio already, please see the document **"First time R user"**. R-studio is just an interface for R that provides a good overview and has many helpful tools. It is an advantage if you know some basics in R, but you should be able to follow along this lab without any prior knowledge if you consult the **"First time R user"**. In this document R-code is text with grey background. You can copy these chunks of code and paste it to an R-script in R-studio (instead of pasting it directly into the console because it quickly becomes hard to overview your work!). For some, this computer lab might inculde some repetition of calculus and algebra, but you will also practice some basic population dynamics and equilibrium theory. Try to think about the problems you meet from an ecological perspective, math and programming are the just tools that help us understand ecology.
+
+If you need, there are hints for most questions **at the end of this document**, ask an instructor or you can also look at the solutions or ask an instructor if you get stuck!
+ 
+# The Schaefer Model
+The Schaefer model is a harvest model based on the logistic growth equation (the Verhulst model). This is a continuous-time model and the following differential equation describes the rate of change in number of individuals, $N$: 
+$$dN/dt = rN(1-N/K) - qEN$$ 
+where $r$ is the intrinsic growth rate, $K$ is the carrying capacity, $q$ is catchability and $E$ is harvesting effort. In this lab, $N$ is referred to as "density" (biomass or number of individuals). Below is some R-code to explore the population density over time in the absence of harvesting to understand the logistic growth model without harvesting.
+
+## Part 1: Recap the logistic growth model without harvesting
+This part is mainly to become familiar with the growth model and read in parameters that you will use later. It is recommended you do not spend too much time on this part, so essentially just copy paste the chunks of code below until you reach Question #1!
+
+```{r}
+rm(list = ls()) # It is often a good practice to start your scrpits with this command, 
+# which clears the workspace (console, "calculator") from all objects. 
+# *Note though that if you want to start a completely clean R session you need to 
+# quit the program the usual way.
+
+# Two parameters govern the dynamics of the population: the growth rate (r) and  
+# the carrying capacity (K).
+# We can give them arbitrary values, it does not really matter here.
+r <- 0.1
+K <- 40
+
+# We also need to set the initial population density and the time range 
+N_ini <- 2
+t <- 100
+
+# Now we can calculate the density at the next time step!
+N2 <- r * N_ini * (1-(N_ini/K)) + N_ini
+N3 <- r * N2 * (1-(N2/K)) + N2
+#... etc etc
+```
+We could repeat this iteratively, but it would be extremely tedious. This is where the loop comes in handy, which is used in programming to automate tasks. Basically, if you find yourself copy-pasting code like this, you can automate it. Here we will use a for loop. This lab is not about writing loops but they are just introduced so that you can get a feel of (1) how it is done (2) to explore the population dynamics.
+
+This is essentially how you write a for loop:
+```{r}
+#for (each of these values) {
+#    do the commands between the curly brackets
+#}
+```
+Together with a feeling for indexing (basically that you can extract the "ith"-value of a vector using hard brackets "[ ]"): 
+```{r}
+vec <- seq(1, 20, 1)
+vec
+#vec[3] # the third element in vec is 3
+```
+... we can build a for loop to simulate the time-dynamics in population density:
+```{r}
+# Create an empty vector to store the values in
+N <- rep(NA, t) # this repeats NA t times
+N[1] <- N_ini   # Set element number 1 to N_ini
+
+
+for (i in 2:t) { # this performs the calculation in the loop from 2 to t, i is the current value
+  N[i] <- r * N[i-1] * (1-(N[i - 1]/K)) + N[i-1]
+}
+
+```
+
+```{r}
+# Plot how population abundance change over time
+plot(y = N, x = 1:t, xlab = "Time", ylab = "N", type = "l")
+```
+
+It is a bit tricky to understand exactly how density dependence works in this model. To better understand that, we can plot the population- and per capita growth rate as a function of $N$.  
+```{r}
+## We can start by creating a vector of N-values (ranging from 0 to carrying capacity):
+N_vec <- seq(from = 0, to = K, by = 1)
+N_vec
+
+## Population growth rate
+growth_pop <- r * N_vec * (1-(N_vec/K))
+
+# Plot how population growth rate varies with population density
+plot(growth_pop ~ N_vec, xlab = "N", ylab = "dN/dt", type = "l")
+
+## Per capita growth rate
+growth_cap <- growth_pop / N_vec
+
+# Plot how per capita growth rate varies with population density
+plot(growth_cap ~ N_vec, xlab = "N", ylab = "dN/dt * 1/N", type = "l")
+```
+
+Use the above plots and your ecological knowledge to answer the following questions:
+
+* **Question 1:** a) How does density dependence operate (what does it do) in this model? b) When is the population growth rate highest? c) How could such density dependence occur in nature?
+
+* **Question 2:** How would the population dynamics change if the intrinsic growth rate or carrying capacity would change? Explore this graphically by adding the updated models in the same plots you did above. Try with half of the initial parameter value (r/2 and K/2). Hint:
+
+```{r}
+# Create a new vector with r being half as large
+N2 <- rep(NA, t)
+N2[1] <- N_ini
+for (i in 2:150) {
+N2[i] <- (r/2) * N2[i-1] * (1-(N2[i - 1]/K)) + N2[i-1]
+}
+
+# Create a new vector with K being half as large
+N3 <- rep(NA, t)
+N3[1] <- N_ini
+for (i in 2:t) {
+N3[i] <- r * N3[i-1] * (1-(N3[i - 1]/(K/2))) + N3[i-1]
+}
+
+# To plot population abundance change over time: Plot the original plot and add the two lines by the command “lines”. Note that we have change the scale on the x axis to capture the asymptote for N2:
+plot(y = N, x = 1:t, xlab = "Time", ylab = "N", type = "l", xlim =c(0,200) )
+lines(y = N2, x = 1:150, col="red")
+lines(y = N3, x = 1:t, col="green")
+```
+Now repeat this for the population growth rate and the per capita growth plots. Or continue with Part 2 if Part 1 took a long time. 
+
+## Part 2: Equilibrium, harvesting and bifurcations
+Now let us explore the equilibrium dynamics and dynamic stability of the Schaefer model analytically and graphically. Here asymptotic stability is an important concept. An equilibrium is asymptotically stable if the system returns to it after small deviations in density. The density at an equilibrium is denoted $N$*.
+
+* **Question 3:** Which are the two equilibria of the Schaefer model? 
+
+* **Question 4:** a) Can you show these equilibria graphically? Assume $q=0.2$ for the rest of this lab and $E=0.1$. b) With this harvesting regime, what is the population density at the positive equilibrium?
+
+* **Question 5:** What can we say about the dynamic stability of this equilibrium?
+
+* **Question 6**: What happens to the equilibria and their stability when we *gradually* increase the fishing effort? (try looking at the analytical solution)
+
+* **Question 7**: Plot $N$* as a function of fishing effort, $E$.
+
+* **Question 8**: a) Can you plot yield, $Y=qEN$*, as a function of fishing effort, $E$? b) At what effort and density is long term yield maximized? (You can give an approximate value based on the last two figures). c) How do the answers in a) and b) depend on $r$ and $K$? You can look at the analytical solutions and/or redo the last two plots.  
+
+## Part 3: Allee effects
+In the logistic model, per capita growth rates decreases linearly with population density. However, in many cases there is a threshold density for positive growth [2], i.e. an Allee effect. In other words, there is a positive relationship between per capita population growth rate and population size at low density. We can extend the Schaefer model to account for Allee-effects like this:
+$$dN/dt = rN(N/K_0-1)(1-N/K)-qEN$$
+
+* **Question 9**: What is the biological interpretation of the parameter $K_0$?
+
+* **Question 10**: Plot the population- and per capita growth rate as a function of $N$ (you can set $K_0$=10). 
+
+With this growth model we have an equilibrium at $N$*$=0$ (trivial equilibrium). The non-zero equilibria are solutions to the quadratic equation:
+$$r(N/K_0-1)(1-N/K)=qE$$
+which we obtain by equaling mortality and growth and dividing by $N$. Rather than solving this equation, we can explore it graphically for different fishing efforts the same way we did it before. Or, we can plot $N$ as a function of $qE$:
+
+* **Question 11**: From the above equation, plot the equilibrium density $N$* as a function of $qE$. Compare to Question #6 and explain how and why the equilibria in the two cases differ! 
+
+* **Question 12**: Plot yield as a function of fishing mortality (see Question #7). Locate the stable part of this curve. Which effort maximizes yield?
+
+* **Question 13**: What challenges to fisheries management do Allee effects pose?
+
+## Bonus questions
+
+* **B1**: Find the exact solution of the of the density at MSY in the Schaefer model.
+
+* **B2**: Solve for the yield at MSY in the Schaefer model.
+
+## References
+[1] Schaefer, M. B. 1954. Some aspects of the dynamics of populations important to the management of commercial marine fisheries. *Bulletin of the Inter-American Tropical Tuna Commission*, 1, 25-56.
+
+[2] Perälä, T., & Kuparinen, A. (2017). Detection of Allee effects in marine fishes: Analytical biases generated by data availability and model selection. *Proceedings of the Royal Society B*, 284(1861), 20171284.
+
+## Hints
+Question 4: Find expressions of $N$ that leads to fishing mortality being equal to growth.
+
+Question 6: What happens to the relationship between growth and mortality if the system is perturbed slightly to the left and right along the $N$-axis?
+
+Question 7: Repeat Question #4 with higher $E$-values.
+
+Question 8: Create a vector of different $E$-values ranging from 0-0.6 and look at the equation you found in Question #3.
+
+Question 9: Insert the expression for the non-trivial equilibrium in the equation.
+
+Question 10: See first part!
+
+Question 11: Use the same N-vector you have used.
+
+Bonus Q 1: Take the derivative of the logistic equation.
+
+Bonus Q 2: Substitute N with K/2.
+
+
+
+
+
