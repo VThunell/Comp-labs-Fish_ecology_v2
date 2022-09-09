@@ -22,7 +22,7 @@ $$dN/dt = rN(1-N/K) - qEN$$
 where $r$ is the intrinsic growth rate, $K$ is the carrying capacity, $q$ is catchability and $E$ is harvesting effort. In this lab, $N$ is referred to as "density" (biomass or number of individuals). Below is some R-code to explore the population density over time in the absence of harvesting to understand the logistic growth model without harvesting.
 
 ## Part 1: Recap the logistic growth model without harvesting
-This part is mainly to become familiar with the growth model and read in parameters that you will use later. It is recommended you do not spend too much time on this part, so essentially just copy paste the chunks of code below until you reach Question #1!
+This part is mainly to become familiar with the growth model excliding fishing mortality ($$qEN$$)(and read in parameters that you will use later. Essentially just copy paste the chunks of code below until you reach Question #1.
 
 ```{r}
 rm(list = ls()) # It is often a good practice to start your scrpits with this command, 
@@ -98,7 +98,8 @@ plot(growth_cap ~ N_vec, xlab = "N", ylab = "dN/dt * 1/N", type = "l")
 
 * **Question 1:** a) How does density dependence operate (what does it do) in this model? b) When is the growth rate of the population highest? c) How could such density dependence occur in nature?
 
-a) As the population increases in numbers, the contribution of each individual to the population growth rate declines. The decline is linear with an intercept $r$ and slope $r/K$. The expression $(1-N/K)$ reaches $0$ when $N$ approaches $K$, and at really low $N$, the population grows exponentially (proportional to $N$). 
+a) As the population increases in numbers, the contribution of each individual to the population growth rate declines. 
+b) The decline is linear with an intercept $r$ and slope $r/K$. The expression $(1-N/K)$ reaches $0$ when $N$ approaches $K$, and at really low $N$, the population grows exponentially (proportional to $N$). 
 b) K/2. At MSY. You can get this value by inspecting the graph, or solve it analytically. You can solve it analytically by taking the derivative with respect to N of the logistic growth equation, and find the value of N that leads to that expression being equal to 0 (i.e. there is no change in rate, this method finds the maxima of the curve). $N$: 
 $$dN/dt = rN(1-N/K)$$ 
 $$dN/dt = rN-rN^2/K$$
@@ -112,8 +113,6 @@ c) This could arise as a result of increased competition for a limiting resource
 * **Question 2:** How would the population dynamics change if the intrinsic growth rate or carrying capacity would change? Explore this graphically by adding the updated models in the same plots you did above. Try with half of the initial parameter value (r/2 and K/2). 
 
 2. The carrying capacity determines the maximum population density while the intrinsic growth rate determines how fast the population will reach carrying capacity.
-
-Hint:
 
 ```{r}
 # Create a new vector with r being half as large
@@ -131,14 +130,18 @@ N3[i] <- r * N3[i-1] * (1-(N3[i - 1]/(K/2))) + N3[i-1]
 }
 
 # To plot population abundance change over time: Plot the original plot and add the two lines by the command “lines”. Note that we have change the scale on the x axis to capture the asymptote for N2:
-plot(y = N, x = 1:t, xlab = "Time", ylab = "N", type = "l", xlim =c(0,200) )
+plot(y = N, x = 1:t, xlab = "Time", ylab = "N", type = "l", xlim =c(0,150) )
+abline(h = K/2, lwd=1)
 lines(y = N2, x = 1:150, col="red")
+abline(h = K/2, lty=3, lwd=2, col="red")
 lines(y = N3, x = 1:t, col="green")
+abline(h = K/2/2, col="green")
+legend("bottomright", legend=c("N", "N2", "N3"),
+       col=c("black","red", "green"), lty=1)
+
 ```
 
-Now repeat this for the population growth rate and the per capita growth plots. Or continue with Part 2 if Part 1 took a long time.
-
-
+Now repeat this for the population growth rate and the per capita growth plots.
 
 ## Part 2: Equilibrium, harvesting and bifurcations
 Now let us explore the equilibrium dynamics and dynamic stability of the Schaefer model analytically and graphically. Here asymptotic stability is an important concept. An equilibrium is asymptotically stable if the system returns to it after small deviations in density. The density at an equilibrium is denoted $N$*.
@@ -205,10 +208,10 @@ Replace $N$* in the equation above with the expression for $N$* found in Questio
     
 ```{r}
 Y <- q*E*(K*(1 - q*E/r))
-plot(Y ~ E, type = "l", xlab = "E", ylab = "Yield", ylim = c(0, 1))
+plot(Y ~ E, type = "l", xlab = "E", ylab = "Yield")#, ylim = c(0, 1))
 ```
-a) see the figure b) $N=20$ and $E=25$
-c)
+a) See the figure b) $N=20$ and $E=0.25$. Or for E, solve Y'(E)=0, i.e. when the derivative of the yield as a function of effort is zero. Then calculate N* using that effort.
+c) 
 
 ```{r}    
 ## Testing different r and K values for yield~effort plot

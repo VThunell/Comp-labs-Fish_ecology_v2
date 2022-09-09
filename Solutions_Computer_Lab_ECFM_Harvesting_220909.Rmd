@@ -1,0 +1,439 @@
+---
+title: "Solutions - Computer Lab ECFM: Population dynamics and harvesting"
+author: "Viktor Thunell, Anna Gårdmark & Max Lindmark"
+date: "8 September 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Aim
+Biological models of fish populations are used to inform national and international governmental institutions of the state of a populations to support decisions on management objectives or allowed catches. The overall aim of the exercise is 1) to understand how biological models can be used to describe growth of fish populations, which could be used to advice on catch limits in fisheries management and 2) to get better feel of the strengths and limitations of using such models.
+
+# Overview
+In this computer based exercise you will use a mathematical model (the Schaefer model [1]) to explore how harvesting (i.e. fishing) changes population numbers and growth rates. The Schaefer model is used to compute the maximum sustainable yield (MSY) which is the largest harvest that a fish population can produce in the long term [3] and a central measure for fisheries management. We use this model to explore population growth, effects of fishing and MSY. 
+
+# Software tool
+You will use R to build and explore the model. R is a statistical software that is very popular in especially biological sciences and is Open Source (free to use and modify). **We expect NO prior knowledge of R nor expect you to learn any R-coding in this exercise**. If you haven't used R before, consider this as an opportunity to get a glimpse of what you can do with this software. If you have used R before, then this may be an opportunity to learn more.
+
+R and R-studio should be available on university computers but if you like to install R and R-studio on your own computer, please refer to the document **"First time R user"**. R-studio is an interface for R that provides a good overview and has many helpful tools. In this document, R-code is text with grey background. You should copy these chunks of code and paste it to an R-script in R-studio (your instructor will show you how). For some, this computer lab might include some repetition of calculus and algebra, but you will also practice some basic population dynamics and equilibrium theory. Try to think about the problems you meet from an ecological perspective, math and programming are the just tools that help us understand ecology.
+
+Ask your instructor when you get stuck!
+
+# The Schaefer Model
+The Schaefer model is a model of a population that follows the logistic growth equation (the Verhulst model) and that is harvested at a constant rate. This is a continuous-time model and the differential equation below describes the rate of change in number of individuals or density $N$ (i.e. number of individuals of a population in a water body): 
+$$dN/dt = rN(1-N/K) - qEN$$ 
+where $r$ is the intrinsic growth rate, $K$ is the carrying capacity, $q$ is catchability and $E$ is harvesting effort. Below is some R-code to explore the population density over time in the absence of harvesting to understand the logistic growth model without harvesting.
+
+## Part 1: Recap the logistic growth model without harvesting
+This part is mainly to become familiar with the logistic growth model (i.e. the Schaefer model without the harvesting, $qEN$) and read in parameters that you will use later. Essentially just copy paste the chunks of code into your own R-script below until you reach Question #1.
+
+```{r}
+# Two parameters govern the dynamics of the population: the growth rate (r) and  
+# the carrying capacity (K). 
+# We assume arbitrary values, it does not really matter here.
+r <- 0.1
+K <- 40
+
+# We also need to set the initial population density and the time range 
+N_ini <- 2
+t <- 100
+
+# Now we can calculate the density at the next time step!
+N2 <- r * N_ini * (1-(N_ini/K)) + N_ini
+N3 <- r * N2 * (1-(N2/K)) + N2
+#... etc
+```
+We could iterate this procedure manually, but it would be extremely tedious. This is where the loop comes in handy, which is used in programming to automate tasks. Basically, if you find yourself copy-pasting code like this, you can automate it. Here we will use a for loop. This lab is not about writing loops but they are just introduced so that you can get a feel of (1) how it is done (2) to explore the population dynamics.
+
+```{r}
+#for (each of these values) {
+#    do the commands between the curly brackets
+#}
+```
+
+In the loop you iterate the model through indexing your way in a vector (basically that you can extract the "ith"-value of a vector using hard brackets "[ ]"): 
+```{r}
+vec <- seq(1, 20, 1)
+vec
+vec[3] # the third element in vec is 3
+```
+... So we can build a for loop to simulate the time-dynamics in population density (N):
+```{r}
+# Create an empty vector to store the values in
+N <- rep(NA, t) # this repeats the value NA t times
+N[1] <- N_ini   # Set element number 1 to N_ini
+
+for (i in 2:t) { # this performs the calculation (the model) in the loop from 2 to t, i is the current value
+  N[i] <- r * N[i-1] * (1-(N[i - 1]/K)) + N[i-1]
+}
+
+N # look at what now is stored in N
+```
+
+```{r}
+# Plot how population abundance change over time
+plot(x = 1:t, y = N, xlab = "Time", ylab = "N", type = "l")
+```
+
+This plot doesn't show exactly how density dependence works in this model. To better understand that, we can plot the population growth rate as a function of the density, $N$.   
+
+```{r}
+## We can start by creating a vector of N-values (ranging from 0 to carrying capacity):
+N_vec <- seq(from = 0, to = K, by = 1)
+N_vec
+
+## Population growth rate
+growth_pop <- r * N_vec * (1-(N_vec/K))
+
+# Plot how population growth rate varies with population density
+plot(growth_pop ~ N_vec, xlab = "N", ylab = "dN/dt", type = "l")
+```
+It may also help you to look at how the net growth rate per capita (population growth rate divided by population density) varies with density, $N$.
+```{r}
+## Per capita growth rate
+growth_cap <- growth_pop / N_vec
+
+# Plot how per capita growth rate varies with population density
+plot(growth_cap ~ N_vec, xlab = "N", ylab = "dN/dt * 1/N", type = "l")
+```
+
+Use the above plots and your ecological knowledge to answer the following questions:
+
+* **Question 1:** 
+* a) How does density dependence operate (what does it do) in this model to the dynamics of the population and individual fish?
+- As the population increases in numbers, the contribution of each individual to the population growth rate declines. The population growth rate increases as long as density dependence is positive, i.e. when number of births relative to deaths increases. The population growth rate decreases when density dependence is negative (number of births relative to deaths decreases).
+* b) What is the intercept and slope of the per capita growth rate?
+- The decline in per capita growth rate is linear with an intercept $r$ and slope $r/K$. The factor $(1-N/K)$ of the logistic growth function reaches $0$ when $N$ approaches $K$, and at really low $N$, the population grows exponentially (proportional to $N$). 
+* c) What is the main assumption we are making about individual fish when using the per capita growth rate to understand population growth in the Schaefer model?
+- All individuals are identical in the sense that they respond exactly the same to changes in density.
+* d) How does density dependence occur in nature?
+- Density dependence can arise as a result of increased competition for a limiting resource as density increases, such as food, refuge, spawning habitat which limits growth, reproduction or mortality. Mortality can also increase with density from spread of disease . 
+* e) At what density is the population growth rate highest? Show this analytically.
+- K/2. At MSY. You can get this value by inspecting the graph, or solve it analytically. You can solve it analytically by taking the derivative with respect to N of the logistic growth equation, and find the value of N that leads to that expression being equal to 0 (i.e. there is no change in rate, this method finds the maxima of the curve). $N$: 
+$$dN/dt = rN(1-N/K)$$ 
+$$dN/dt = rN-rN^2/K$$
+$$(dN/dt)' = r-2rN/K$$
+$$r-2rN/K = 0$$
+$$2rN/K = r$$
+$$2N/K = 1$$
+$$N = K/2$$
+
+* f) What does carrying capacity represent in nature? Give examples from nature of why assuming a set carrying capacity could be  wrong in a dynamic model.
+- Carrying capacity is the maximum population size. This is varying with environmental conditions and therefore time making population growth over time a function of carrying capacity a strange assumption. The environmental conditions can be any ecological factor that affects population size, e.g. food availability, predation, temperature or fishing!
+
+* **Question 2:** 
+* a) How would the population dynamics change if the intrinsic growth rate or carrying capacity would change? Explore this graphically by adding the updated models in the same plots you did above. Try with half of the initial parameter value **(r/2 and K/2)**. Use the code in the chunk below Question 2 to create and plot the results.
+- The carrying capacity determines the maximum population density while the intrinsic growth rate determines how fast the population will reach carrying capacity.
+* b) Give examples of species (not necessarily fish) that matches the dynamics given by K and r of N, N2 and N3 (below).
+- Cod has high r and high K. Humans have low r, but what about K? Many sharks has low r and K. Herring has high K. 
+* c) what are the horizontal lines in the plot below?
+- K/2, when the slope of population growth rate goes from positive to negative, i.e. is zero.
+
+```{r}
+# Create a new vector with r being half as large
+N2 <- rep(NA, t)
+N2[1] <- N_ini
+for (i in 2:150) {
+N2[i] <- (r/2) * N2[i-1] * (1-(N2[i - 1]/K)) + N2[i-1]
+}
+
+# Create a new vector with K being half as large
+N3 <- rep(NA, t)
+N3[1] <- N_ini
+for (i in 2:t) {
+N3[i] <- r * N3[i-1] * (1-(N3[i - 1]/(K/2))) + N3[i-1]
+}
+
+# To plot population abundance change over time: Plot the original plot and add the two lines by the command “lines”. Note that we have change the scale on the x axis to capture the asymptote for N2:
+plot(y = N, x = 1:t, xlab = "Time", ylab = "N", type = "l", xlim =c(0,150) )
+abline(h = K/2, lwd=1)
+lines(y = N2, x = 1:150, col="red")
+abline(h = K/2, lty=3, lwd=2, col="red")
+lines(y = N3, x = 1:t, col="green")
+abline(h = K/2/2, col="green")
+legend("bottomright", legend=c("N", "N2", "N3"),
+       col=c("black","red", "green"), lty=1)
+```
+
+Now repeat this for the population growth rate and the per capita growth plots.
+
+Let the instructor know when you are finished with Q:s 1 and 2, we will discuss them together in the group. While waiting, try repeating this for the population growth rate and the per capita growth plots!
+
+## Part 2: Equilibrium and harvesting
+Now let us explore the equilibrium dynamics and dynamic stability of the Schaefer model analytically and graphically. Here asymptotic stability is an important concept. An equilibrium is asymptotically stable if the system returns to it after small deviations (perturbations) in density, and unstable if it moves away from the equilibrium after a small perturbation. The density at an equilibrium is often denoted $N$*.
+
+* **Question 3:** 
+* a) What are the two equilibria of the Schaefer model? 
+- The trivial equilibrium is $N$*$=0$. The non-trivial equilibrium is given by setting the growth rate to be equal fishing mortality:
+
+$$dN/dt = 0$$
+$$rN(1-N/K)-qEN = 0$$
+$$rN(1-N/K)=qEN$$
+$N=0$ is the solution for the trivial equilibrium. Continue to get the second solution:
+$$r(1-N/K)=qE$$
+$$1-(N/K)=qE/r$$
+$$K-N=KqE/r$$
+$$-N=(KqE/r)-K$$
+$$N=(-KqE/r)+K$$
+$$N=(1-qE/r)K$$
+* b) Can you show these equilibria graphically? Assume catchability $q=0.2$ for the rest of this lab and effort $E=0.1$. 
+```{r}
+plot(growth_pop ~ N_vec, xlab = "N", ylab = "dN/dt", type = "l")
+q <- 0.2
+E <- 0.1
+lines(q*E*N ~ N, col="red")
+```
+* c) With this harvesting regime, what is the population density at the positive equilibrium? 
+- N is roughly ~32 at the non-zero equilibrium. Look at plot or calculate the expression for the non-trivial equilibrium.
+
+* **Question 4:** 
+* a) What can we say about the dynamic stability of this equilibrium?
+- Small positive perturbations to population densities ($N$-axis) above the equilibrium leads to fishing mortality (red line) being higher than the growth rate, and $N$ declines back to the equilibrium. Small negative perturbations ($N$ decreases), the growth rate is higher than the fishing mortality, and $N$ will increase.
+* b) By looking at the analytical solution for the non-trivial equilibrium, explain what happens with the equilibrium and its stability when we *gradually* increase the fishing effort? 
+- It is moved to lower values of N. In the expression for th equilibrium, $1-qE$ will become smaller with higher values of effort.
+* c) show this graphically.
+```{r}
+plot(growth_pop ~ N_vec, xlab = "N", ylab = "dN/dt", type = "l")
+q <- 0.2
+E <- 0.35
+lines(q*E*N ~ N, col="blue") # Stability of the equilibrium is the same!
+
+## Try even higher Effort:
+E <- 0.6
+lines(q*E*N ~ N, col="green")
+```
+
+With sufficiently high mortality (green line), it is always higher than the growth rate, in which case the trivial equilibrium ($N$*$=0$) is the only equilibrium and is then stable. That is, the population goes extinct when the fishing pressure is too high.
+
+Let the instructor know when you are finished with Q:s 3 and 4, we will discuss them together in the group.
+
+## Part 3: Harvesting yield, effort and MSY
+
+* **Question 5**: 
+* Plot $N$* as a function of fishing effort, $E$.
+- Refer to the expression in Question #3 for $N$* , create a vector that holds the values of effort, $E$, that you want to explore. Plot $N$* as a function of $E$:
+```{r}
+E <- seq(from = 0, to = 0.6, by = 0.05)
+N_eq <- (1 - q*E/r)*K
+
+plot(N_eq ~ E, type = "l", xlab = "E", ylab = "N*")
+abline(a = 0, b = 0, lty = 2)
+```
+
+* **Question 6**: 
+* a) Give two examples of what fishing effort can represent.
+- Effort is often estimated from calculations using information on time and length of a trawl haul or netting time of a net, size of a trawl or a cage, number of boats in a fishing fleet etc.
+* b) Can you plot yield, $Y=qEN$*, as a function of fishing effort, $E$?
+- Replace $N$* in the equation above with the expression for $N$* found in Question #3:
+
+```{r}
+Y <- q*E*(K*(1 - q*E/r))
+plot(Y ~ E, type = "l", xlab = "E", ylab = "Yield")#, ylim = c(0, 1))
+```
+
+* c) At what effort and density is long term yield maximized? 
+- Estimate from graph or solve it analytically by finding the derivative of the function for yield over effort and set it to zero. By this we find the value of effort at the hump of the curve. 
+
+$$Y = qEK(1 - q*E/r) = qEK - q^2E^2K/r$$
+$$dY/dE = qK - 2q^2EK/r$$
+$$dY/dE = 0$$
+$$2q^2EK/r = qK$$
+$$2qE/r = 1$$
+$$2qE = r$$
+$$Y_{max}(E) = r/2q = 0.1/(2*0.2)=0.25$$
+* d) If our measure of effort represents number of boats, how will the yield per boat change with effort?
+- It will decrease. Divide the expression for yield over effort with effort. 
+* e) How do the answers in b) and c) depend on $r$ and $K$? You can look at the analytical solution and/or redo the last two plots.
+
+```{r}    
+## Testing different r and K values for yield~effort plot
+## Basically, below we recreate the last two figures while varying r and K by scaling 
+## them with 0.5 and 2! ** Note, it is generally not very good practice to overwrite 
+## objects like below, but at the same time creating new objects with slightly different 
+## names is not perfect either. Both methods are quite error prone for different reasons,
+## and we can discuss other more safe options!
+q <- 0.2
+E <- seq(from = 0, to = 0.6, by = 0.05)
+K <- 40
+r <- 0.1
+
+Y <- q*E*(K*(1 - q*E/r))
+plot(Y ~ E, type = "l", xlab = "E", ylab = "Yield", ylim = c(0, 2.5))
+
+Y <- q*E*(K*(1 - q*E/(r*0.5)))
+lines(Y ~ E, type = "l", xlab = "E", ylab = "Yield", ylim = c(0, 1), col = "blue")
+
+Y <- q*E*(K*(1 - q*E/(r*2)))
+lines(Y ~ E, type = "l", xlab = "E", ylab = "Yield", ylim = c(0, 1), col = "blue", lty = 2)
+
+Y <- q*E*((K*0.5)*(1 - q*E/r))
+lines(Y ~ E, type = "l", xlab = "E", ylab = "Yield", ylim = c(0, 1), col = "red")
+
+Y <- q*E*((K*2)*(1 - q*E/r))
+lines(Y ~ E, type = "l", xlab = "E", ylab = "Yield", ylim = c(0, 1), col = "red", lty = 2)
+
+legend("topleft", 
+       c("default: r=0.1, K=40", 
+         "r=0.05, K=40", 
+         "r=0.2, K=40",
+         "r=0.1, K=20",
+         "r=0.1, K=80"),
+       lty = c(1,1,2,1,2),
+       col = c("black", "blue", "blue", "red", "red"),
+       bty = "n")
+
+## Testing different r and K values for N*~effort plot
+E <- seq(from = 0, to = 0.6, by = 0.05)
+N_eq <- (1 - q*E/r)*K
+plot(N_eq ~ E, type = "l", xlab = "E", ylab = "N*")
+abline(a = 0, b = 0, lty = 2)
+
+N_eq <- (1 - q*E/(r*0.5))*K
+lines(N_eq ~ E, type = "l", xlab = "E", ylab = "N*", col = "blue")
+
+N_eq <- (1 - q*E/(r*2))*K
+lines(N_eq ~ E, type = "l", xlab = "E", ylab = "N*", lty = 2, col = "blue")
+
+N_eq <- (1 - q*E/(r))*K*0.5
+lines(N_eq ~ E, type = "l", xlab = "E", ylab = "N*", col = "red")
+
+N_eq <- (1 - q*E/(r))*K*2
+lines(N_eq ~ E, type = "l", xlab = "E", ylab = "N*", lty = 2, col = "red")
+
+legend("topright", 
+       c("default: r=0.1, K=40", 
+         "r=0.05, K=40", 
+         "r=0.2, K=40",
+         "r=0.1, K=20",
+         "r=0.1, K=80"),
+       lty = c(1,1,2,1,2),
+       col = c("black", "blue", "blue", "red", "red"),
+       bty = "n")
+```
+
+$K$ affects $N$ at maximum growth, but not growth rate at maximum growth. Therefore, $K$ affects yield for any given effort, and $N$* for any given effort, but not the effort at the maximum of yield (there is no $K$ in the above expression!)
+    
+$r$ does not affect $N$ at maximum population growth rate (remember $K/2$), but affects the actual value of the growth rate. It affects effort at MSY (see analytical solution above), therefore it affects yield (which has $E$) and $E_M$.
+    
+This also means that $r$ affects how much harvesting a population can sustain without going extinct, which $K$ does not.
+
+* **Question 7**: Maximum sustainable yield (MSY) is the highest sustainable annual harvest (catch) at which the population  production is sustained in the long term. What is the exact solution of the population density at MSY in the Schaefer model?
+
+MSY occurs at the population density where growth is fastest (compare your illustration of the growth and mortality parts of the Schaefer equation that you may have done to answer Question 1e). We find this point by taking the derivative of the logistic growth model with respect to $N$ and set it to 0.
+
+* **Question 8**: What is the analytical expression for the yield at MSY in the Schaefer model?
+
+At MSY, the yield equals the maximum growth in the population. This occurs at $N=K/2$ and if we put that into the logistic growth equation (Q1), MSY is $Y=r(K/2)(1-(K/2)/K)$.
+$$r(K/2)(1-(K/2)/K)$$
+$$rK/2(1-1/2)$$
+$$rK/2-rK/4$$
+$rK/4$
+
+So the yield at MSY is $$qEN = Y = r(K/2)(1-(K/2)/K)$$
+
+Let the instructor know when you are finished with Q:s 7 to 9, we will discuss them together in the group. 
+
+## EXTRA BONUS part: Allee effects
+If you feel that you are done with and understand question 1-9, continue with this voluntary exercise on Allee effects on population dynamics.
+
+In the logistic model, per capita growth rates decreases linearly with population density. However, in many cases there is a threshold density for positive growth [2], i.e. an Allee effect. In other words, there is a positive relationship between per capita population growth rate and population size at low density. We can extend the Schaefer model to account for Allee-effects like this:
+$$dN/dt = rN(N/K_0-1)(1-N/K)-qEN$$
+
+* **Question 9**: What is the biological interpretation of the parameter $K_0$?
+
+It is the threshold density for the population to exhibit positive growth rates. Or, when they fall below this threshold, the population collapses because then the per capita growth rate decrease with declining population density.
+    
+* **Question 10**: Plot the population- and per capita growth rate as a function of $N$ (you can set $K_0$=10). 
+
+Repeat the analysis in the first part, but with the new growth model 
+```{r}
+## Introduce the parameter K_0
+K_0 <- 10
+
+## Population-level growth rate
+G <- r * N_vec * ((N_vec/K_0)-1) * (1-(N_vec/K))
+
+plot(G ~ N_vec, type = "l", xlab = "N", ylab = "dN/dt")
+abline(a = 0, b = 0, lty = 2)
+
+## Per capita growth
+plot(G/N_vec ~ N_vec, type = "l", xlab = "N", ylab = "dN/dt*1/N", ylim = c(0, 0.06))
+```
+
+With this growth model we have an equilibrium at $N$*$=0$ (trivial equilibrium). The non-zero equilibria are solutions to the quadratic equation:
+$$N=(1-qE/r)K$$
+which we obtain by equaling mortality and growth and dividing by $N$. Rather than solving this equation, we can explore it graphically for different fishing efforts the same way we did it before. Or, we can plot $N$ as a function of $qE$:
+
+* **Question 11**: From the above equation, plot the equilibrium density $N$* as a function of $qE$. Compare to Question #6 and explain how and why the equilibria in the two cases differ! 
+
+```{r}
+qE <- r*((N_vec/K_0)-1)*(1-N_vec/K)
+
+plot(N_vec ~ qE, type = "l", xlab = "E", ylab = "N*", xlim = c(0, 0.06))
+abline(a = 25, b = 0, col = "red")
+```
+
+They differ in that in the absence of Allee effects, the density at equilibrium declines monotonically with harvesting as $N$*$=(1-qE/r)K$, wheres here they collapse suddenly when $N=K_0$ (because the population density is below the threshold for positive growth). The equilibrium below the red line is unstable, and the unstable and stable equilibria collide where the red line intersects with the black line.
+
+* **Question 12**: Plot yield as a function of fishing mortality (see Question #7). Locate the stable part of this curve. Which effort maximizes yield?
+
+Yield is defined as: $qEN$, so we can go back to the quadratic equation for the non-zero equilibrium and multiply back $N$. In other words, redo the same plot as in the previous question but also multiply in $N$:
+```{r}
+## Yield ~ E
+plot(qE*N_vec ~ qE, type = "l", xlab = "E", ylab = "Yield", xlim = c(0, 0.06))
+abline(a = 0, b = 25, col = "red")
+```
+
+Here, increasing effort from 0 increases yield until the curve "folds" (this is a fold or a saddle node bifurcation). At the point where the stable branch starts to move towards lower $E$ the two equilibria (stable and unstable) collide and disappear.
+
+* **Question 13**: What challenges to fisheries management do Allee effects pose?
+
+When Allee effects are present, yield increases with Effort until it collapses, so unlike in the Schaefer model, you will not detect any decline in yield when you are suddenly over harvesting the stock.
+
+* **B1**: Find the exact solution of the of the density at MSY in the Schaefer model.
+
+
+* **B2**: Solve for the yield at MSY in the Schaefer model.
+
+At MSY, the yield equals the maximum growth in the population. This occurs at $N=K/2$. The growth at $N=K/2$, and therefore the MSY, is $Y=r(K/2)(1-(K/2)/K)$.
+
+Replace $N$ with $K/2$ and substitute $Y=qEN$.
+$$qEN = Y = r(K/2)(1-(K/2)/K)$$
+$$Y = r(K/2)(1-1/2)$$
+$$Y = r(K/2)-r(K/4)$$
+$$Y = 2r(K/4)-r(K/4)$$
+$$Y = rK/4$$
+
+## References
+[1] Schaefer, M. B. 1954. Some aspects of the dynamics of populations important to the management of commercial marine fisheries. *Bulletin of the Inter-American Tropical Tuna Commission*, 1, 25-56.
+
+[2] Per?l?, T., & Kuparinen, A. (2017). Detection of Allee effects in marine fishes: Analytical biases generated by data availability and model selection. *Proceedings of the Royal Society B*, 284(1861), 20171284.
+
+## Hints
+Question 4: Find expressions of $N$ that leads to fishing mortality being equal to growth.
+
+Question 6: What happens to the relationship between growth and mortality if the system is perturbed slightly to the left and right along the $N$-axis?
+
+Question 7: Repeat Question #4 with higher $E$-values.
+
+Question 8: Create a vector of different $E$-values ranging from 0-0.6 and look at the equation you found in Question #3.
+
+Question 9: Insert the expression for the non-trivial equilibrium in the equation.
+
+Question 10: See first part!
+
+Question 11: Use the same N-vector you have used.
+
+Bonus Q 1: Take the derivative of the logistic equation.
+
+Bonus Q 2: Substitute N with K/2.
+
+
+
+
+
